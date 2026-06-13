@@ -15,11 +15,14 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	queries        *database.Queries
+	platform       string
 }
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		fmt.Println("Unable to establish connection with postgres database.")
@@ -28,6 +31,7 @@ func main() {
 	newConfig := apiConfig{
 		fileserverHits: atomic.Int32{},
 		queries:        database.New(db),
+		platform:       platform,
 	}
 	serveMux := http.NewServeMux()
 	newServer := http.Server{
@@ -39,5 +43,6 @@ func main() {
 	serveMux.HandleFunc("POST /admin/reset", newConfig.resetServerhits)
 	serveMux.HandleFunc("GET /api/healthz", healthyHandler)
 	serveMux.HandleFunc("POST /api/validate_chirp", validateHandler)
+	serveMux.HandleFunc("POST /api/users", newConfig.userCreateHandler)
 	newServer.ListenAndServe()
 }
