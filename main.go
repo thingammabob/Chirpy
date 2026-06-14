@@ -47,7 +47,10 @@ func main() {
 	serveMux.HandleFunc("POST /admin/reset", newConfig.resetServerhits)
 	serveMux.HandleFunc("GET /api/healthz", healthyHandler)
 	serveMux.HandleFunc("POST /api/users", newConfig.userCreateHandler)
-	serveMux.HandleFunc("POST /api/chirps", newConfig.chirpHandler)
+	serveMux.HandleFunc("POST /api/chirps", newConfig.createChirpHandler)
+	serveMux.HandleFunc("GET /api/chirps", newConfig.getChirpsHandler)
+	serveMux.HandleFunc("GET /api/chirps/{chirpID}", newConfig.getAChirpHandler)
+
 	log.Printf("Serving on port: %s\n", port)
 	log.Fatal(newServer.ListenAndServe())
 }

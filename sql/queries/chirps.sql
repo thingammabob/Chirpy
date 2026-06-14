@@ -5,3 +5,9 @@ RETURNING *;
 
 -- name: DeleteAllChirps :exec
 DELETE FROM chirps;
+s
+-- name: GetChirps :many
+SELECT * FROM chirps ORDER BY created_at;
+
+-- name: GetChirp :one
+SELECT * FROM chirps WHERE ID = $1;
