@@ -12,6 +12,10 @@ func (cfg *apiConfig) getChirpsHandler(resWriter http.ResponseWriter, r *http.Re
 		respondWithError(resWriter, http.StatusInternalServerError, "Couldn't retrieve chips.", err)
 		return
 	}
+	if len(chirps) == 0 {
+		respondWithError(resWriter, http.StatusNotFound, "No chirps available.", err)
+		return
+	}
 
 	myChirps := []Chirp{}
 	for _, chirp := range chirps {
