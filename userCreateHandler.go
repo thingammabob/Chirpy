@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -20,26 +19,29 @@ func (cfg *apiConfig) userCreateHandler(w http.ResponseWriter, r *http.Request) 
 	type userRequest struct {
 		Email string `json:"email"`
 	}
+	type response struct {
+		User
+	}
 
 	aUserRequest := userRequest{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&aUserRequest)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Something went wrong decoding the request: %w", err))
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong decoding the request.", err)
 		return
 	}
 	user, err := cfg.queries.CreateUser(r.Context(), aUserRequest.Email)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Something went wrong creating the user: %w", err))
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong creating the user.", err)
 		return
 	}
-	myUser := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-	}
-
-	respondWithJSON(w, 201, myUser)
+	respondWithJSON(w, 201, response{
+		User: User{
+			ID:        user.ID,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
+		},
+	})
 
 }

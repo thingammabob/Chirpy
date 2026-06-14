@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sync/atomic"
@@ -19,13 +19,17 @@ type apiConfig struct {
 }
 
 func main() {
+	const port = "8080"
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		fmt.Println("Unable to establish connection with postgres database.")
+		log.Fatalf("Error opening database: %s", err)
 		return
 	}
 	newConfig := apiConfig{
@@ -34,15 +38,16 @@ func main() {
 		platform:       platform,
 	}
 	serveMux := http.NewServeMux()
-	newServer := http.Server{
-		Addr:    ":8080",
+	newServer := &http.Server{
+		Addr:    ":" + port,
 		Handler: serveMux,
 	}
 	serveMux.Handle("/app/", newConfig.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
 	serveMux.HandleFunc("GET /admin/metrics", newConfig.serverhitsHandler)
 	serveMux.HandleFunc("POST /admin/reset", newConfig.resetServerhits)
 	serveMux.HandleFunc("GET /api/healthz", healthyHandler)
-	serveMux.HandleFunc("POST /api/validate_chirp", validateHandler)
 	serveMux.HandleFunc("POST /api/users", newConfig.userCreateHandler)
-	newServer.ListenAndServe()
+	serveMux.HandleFunc("POST /api/chirps", newConfig.chirpHandler)
+	log.Printf("Serving on port: %s\n", port)
+	log.Fatal(newServer.ListenAndServe())
 }
