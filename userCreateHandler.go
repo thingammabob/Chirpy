@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/thingammabob/chirpy/internal/auth"
+	"github.com/thingammabob/chirpy/internal/database"
 )
 
 type User struct {
@@ -17,7 +19,8 @@ type User struct {
 
 func (cfg *apiConfig) userCreateHandler(w http.ResponseWriter, r *http.Request) {
 	type userRequest struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	type response struct {
 		User
@@ -30,7 +33,15 @@ func (cfg *apiConfig) userCreateHandler(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong decoding the request.", err)
 		return
 	}
-	user, err := cfg.queries.CreateUser(r.Context(), aUserRequest.Email)
+	hashedPassword, err := auth.HashPassword(aUserRequest.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong trying to process the password.", err)
+		return
+	}
+	user, err := cfg.queries.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          aUserRequest.Email,
+		HashedPassword: hashedPassword,
+	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong creating the user.", err)
 		return

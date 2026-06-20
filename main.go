@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	queries        *database.Queries
 	platform       string
+	tokenSecret    string
 }
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	tokenSecret := os.Getenv("secret")
 	if platform == "" {
 		log.Fatal("PLATFORM must be set")
 	}
@@ -36,6 +38,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		queries:        database.New(db),
 		platform:       platform,
+		tokenSecret:    tokenSecret,
 	}
 	serveMux := http.NewServeMux()
 	newServer := &http.Server{
@@ -50,6 +53,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/chirps", newConfig.createChirpHandler)
 	serveMux.HandleFunc("GET /api/chirps", newConfig.getChirpsHandler)
 	serveMux.HandleFunc("GET /api/chirps/{chirpID}", newConfig.getAChirpHandler)
+	serveMux.HandleFunc("POST /api/login", newConfig.loginHandler)
 
 	log.Printf("Serving on port: %s\n", port)
 	log.Fatal(newServer.ListenAndServe())
