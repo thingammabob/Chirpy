@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,11 +13,16 @@ import (
 	"github.com/google/uuid"
 )
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+func MakeRefreshToken() string {
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 	output, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(1 * time.Hour)),
 		Subject:   userID.String(),
 	}).SignedString([]byte(tokenSecret))
 	if err != nil {
@@ -55,7 +62,7 @@ func CheckPaswordHash(password, hash string) (bool, error) {
 
 func GetBearerToken(headers http.Header) (string, error) {
 	jwtArr := strings.Split(headers.Get("Authorization"), " ")
-	if len(jwtArr) != 2 {
+	if len(jwtArr) < 2 || jwtArr[0] != "Bearer" {
 		return "", errors.New("Invalid authorization header")
 	}
 	jwt := jwtArr[1]

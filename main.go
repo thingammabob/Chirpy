@@ -54,7 +54,10 @@ func main() {
 	serveMux.HandleFunc("GET /api/chirps", newConfig.getChirpsHandler)
 	serveMux.HandleFunc("GET /api/chirps/{chirpID}", newConfig.getAChirpHandler)
 	serveMux.HandleFunc("POST /api/login", newConfig.loginHandler)
-
+	serveMux.HandleFunc("POST /api/refresh", newConfig.refreshTokenHandler)
+	serveMux.HandleFunc("POST /api/revoke", newConfig.revokeRefreshTokenHandler)
+	serveMux.HandleFunc("PUT /api/users", newConfig.updateUserHandler)
+	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", newConfig.deleteChirpHandler)
 	log.Printf("Serving on port: %s\n", port)
 	log.Fatal(newServer.ListenAndServe())
 }

@@ -3,16 +3,15 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/thingammabob/chirpy/internal/auth"
+	"github.com/thingammabob/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	type credentials struct {
-		Email           string `json:"email"`
-		Password        string `json:"password"`
-		RequestDuration int    `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	creds := credentials{}
 	decoder := json.NewDecoder(r.Body)
@@ -36,19 +35,21 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, "Invalid credentials", err)
 		return
 	}
-	dur := 1 * time.Hour
-	if creds.RequestDuration != 0 {
-		dur = time.Duration(creds.RequestDuration) * time.Second
-	}
-	jwt, err := auth.MakeJWT(user.ID, cfg.tokenSecret, dur)
+
+	jwt, err := auth.MakeJWT(user.ID, cfg.tokenSecret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error in creating JWT", err)
 		return
 	}
-
+	refreshToken := auth.MakeRefreshToken()
+	cfg.queries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:  refreshToken,
+		UserID: user.ID,
+	})
 	type response struct {
 		User
-		Token string `json:"token"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
@@ -57,7 +58,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
 		},
-		Token: jwt,
+		Token:        jwt,
+		RefreshToken: refreshToken,
 	})
 
 }
