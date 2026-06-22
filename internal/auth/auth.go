@@ -67,7 +67,19 @@ func GetBearerToken(headers http.Header) (string, error) {
 	}
 	jwt := jwtArr[1]
 	if jwt == "" {
-		return "", errors.New("Invalid jwt")
+		return "", errors.New("JWT is empty")
 	}
 	return jwt, nil
+}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	apiArr := strings.Split(headers.Get("Authorization"), " ")
+	if len(apiArr) < 2 || apiArr[0] != "ApiKey" {
+		return "", errors.New("Invalid authorization header")
+	}
+	api := apiArr[1]
+	if api == "" {
+		return "", errors.New("API key empty")
+	}
+	return api, nil
 }
