@@ -58,6 +58,7 @@ func main() {
 	serveMux.HandleFunc("POST /api/revoke", newConfig.revokeRefreshTokenHandler)
 	serveMux.HandleFunc("PUT /api/users", newConfig.updateUserHandler)
 	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", newConfig.deleteChirpHandler)
+	serveMux.HandleFunc("POST /api/polka/webhooks", newConfig.polkaWebhookHandler)
 	log.Printf("Serving on port: %s\n", port)
 	log.Fatal(newServer.ListenAndServe())
 }

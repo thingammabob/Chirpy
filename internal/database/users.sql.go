@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, email, hashed_password)
 VALUES (gen_random_uuid(), NOW(), NOW(), $1, $2)
-RETURNING id, created_at, updated_at, email, hashed_password
+RETURNING id, created_at, updated_at, email, hashed_password, is_chirpy_red
 `
 
 type CreateUserParams struct {
@@ -31,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -45,7 +46,7 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 }
 
 const getUserFromEmail = `-- name: GetUserFromEmail :one
-SELECT id, created_at, updated_at, email, hashed_password FROM USERS WHERE email = $1
+SELECT id, created_at, updated_at, email, hashed_password, is_chirpy_red FROM USERS WHERE email = $1
 `
 
 func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, error) {
@@ -57,6 +58,7 @@ func (q *Queries) GetUserFromEmail(ctx context.Context, email string) (User, err
 		&i.UpdatedAt,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
@@ -67,7 +69,7 @@ SET email = $1,
 hashed_password = $2,
 updated_at = NOW()
 WHERE id = $3
-RETURNING id, created_at, updated_at, email, hashed_password
+RETURNING id, created_at, updated_at, email, hashed_password, is_chirpy_red
 `
 
 type UpdateUserParams struct {
@@ -85,6 +87,21 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.UpdatedAt,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsChirpyRed,
 	)
 	return i, err
+}
+
+const upgradeUser = `-- name: UpgradeUser :one
+UPDATE users
+SET is_chirpy_red = true
+WHERE id = $1
+RETURNING id
+`
+
+func (q *Queries) UpgradeUser(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, upgradeUser, id)
+	var id_2 uuid.UUID
+	err := row.Scan(&id_2)
+	return id_2, err
 }
